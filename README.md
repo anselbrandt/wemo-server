@@ -1,199 +1,59 @@
-## Controlling Wemo Switches Over HTTP with SOAP XML
+# Wemo Switch Remote App
 
-#### Perform Discovery using SSDP (Simple Service Discovery Protocol)
+![Wemo Switch](https://github.com/anselbrandt/wemo-app/blob/master/wemo.jpeg?raw=true)
 
-With the following URN (Uniform Resource Name)
+I have 6 first genereation Wemo Switches. They work okay. Like a lot of cloud connected IoT devices, the offical Wemo app insists on connecting to the cloud to control my devices locally. This can be annoying if there are network issues, or the Wemo cloud server is unresponsive. You shouldn't have to connect to the internet to use a light switch.
 
-```
-urn:Belkin:device:controllee:1
-```
+As of 2020, you are now required to log in to the Wemo app to control your devices, and your authentication seems to expire at random intervals. This was enough to compel me to write my own Wemo app. Turns out, it's not that hard. Fortunately, Wemo uses an open API and standard protocols. You can read about them [here](https://github.com/anselbrandt/wemo-app/blob/master/src/wemo.md).
 
-Device addresses will be located in the device response `LOCATION` header.
+If you want to use this app, you need some type of server on your local network that is capable of running [Node.js](https://nodejs.org/en/). A Raspberry Pi would make an ideal candidate, or any desktop that is always on.
 
-```
-LOCATION: 'http://10.0.1.74:49153/setup.xml'
-```
+The server will act as a bridge to your devices, and serve a single-page web app you can access from any computer or device on your network.
 
-## Actions
+Currently, the app is not full-featured, and limited to triggering On/Off events You will still need the official app to set up your devices, access over the cloud, or use more advanced features. Feel free to fork this repo and add any feature you like.
 
-Actions, services, and device attributes are exposed at each device's XML entrypoint.
+![Screenshot](https://github.com/anselbrandt/wemo-app/blob/master/screenshot.png?raw=true)
 
-### \* Important - SOAPACTION header MUST include double quotes (" ") around action
+Once installed, you should be able to see something like this. If all your devices don't immediately appear, refresh the page.
 
-### GetFriendlyName
+## Requirements
 
-Submit an HTTP Post request to `/upnp/control/basicevent1` with the following headers:
+[Node.js](https://nodejs.org/en/)
 
-```
-POST "http://10.0.1.74:49153/upnp/control/basicevent1"
-"Content-type": 'text/xml; charset="utf-8"'
-SOAPACTION: '"urn:Belkin:service:basicevent:1#GetFriendlyName"'
-```
+[Yarn](https://classic.yarnpkg.com/en/docs/install)
 
-and the following body:
+## How to use
 
-```
-`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-  <s:Body>
-    <u:GetFriendlyName xmlns:u="urn:Belkin:service:basicevent:1"></u:GetFriendlyName>
-  </s:Body>
-</s:Envelope>`
+### Using `npx degit`
+
+Execute [`npx degit`](https://github.com/Rich-Harris/degit) to download:
+
+```bash
+npx degit https://github.com/anselbrandt/wemo-app wemo-app
 ```
 
-Response:
+Then:
 
 ```
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-    <s:Body>
-        <u:GetFriendlyNameResponse xmlns:u="urn:Belkin:service:basicevent:1">
-            <FriendlyName>Nightlight</FriendlyName>
-        </u:GetFriendlyNameResponse>
-    </s:Body>
-</s:Envelope>
+cd wemo-app
+yarn
+&&
+yarn start
 ```
 
-### GetBinaryState (On/Off Status)
+## Develop
 
-Submit an HTTP Post request to `/upnp/control/basicevent1` with the following headers:
+The server can be run in dev mode by executing `yarn watch` and `yarn dev` in two separate console tabs or windows.
 
-```
-POST "http://10.0.1.74:49153/upnp/control/basicevent1"
-"Content-type": 'text/xml; charset="utf-8"'
-SOAPACTION: '"urn:Belkin:service:basicevent:1#GetBinaryState"'
-```
-
-and the following body:
+The web app, which was built with [create-react-app](https://create-react-app.dev) can be run in dev mode by executing:
 
 ```
-`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-  <s:Body>
-    <u:GetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"></u:GetBinaryState>
-  </s:Body>
-</s:Envelope>`
+cd web
+yarn start
 ```
 
-Response:
+However, as it relies on the server, it was simpler to have the server run in dev mode, and re-execute `yarn build` on the front-end, rather than eject from `create-react-app` and/or run a custom react script.
 
-```
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-    <s:Body>
-        <u:GetBinaryStateResponse xmlns:u="urn:Belkin:service:basicevent:1">
-            <BinaryState>1</BinaryState>
-        </u:GetBinaryStateResponse>
-    </s:Body>
-</s:Envelope>
-```
+### Express React Typescript
 
-### SetBinaryState (Turn Wemo On/Off)
-
-Submit an HTTP Post request to `upnp/control/basicevent1` with the following headers:
-
-```
-POST "http://10.0.1.74:49153/upnp/control/basicevent1"
-Content-type: 'text/xml; charset="utf-8"'
-SOAPACTION: '"urn:Belkin:service:basicevent:1#SetBinaryState"'
-```
-
-and the following body:
-
-```
-`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-  <s:Body>
-    <u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1">
-      <BinaryState>1</BinaryState>
-    </u:SetBinaryState>
-  </s:Body>
-</s:Envelope>`
-```
-
-Response:
-
-```
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-    <s:Body>
-        <u:SetBinaryStateResponse xmlns:u="urn:Belkin:service:basicevent:1">
-            <BinaryState>1</BinaryState>
-            <CountdownEndTime>0</CountdownEndTime>
-            <deviceCurrentTime>1595917072</deviceCurrentTime>
-        </u:SetBinaryStateResponse>
-    </s:Body>
-</s:Envelope>
-```
-
-Or to turn the Wemo off:
-
-```
-`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-  <s:Body>
-    <u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1">
-      <BinaryState>0</BinaryState>
-    </u:SetBinaryState>
-  </s:Body>
-</s:Envelope>`
-```
-
-### Subscribe to Device Events
-
-Once subscribed to, a device will emit changes in state (on/off) to a callback URL. Subsequent notifications must receive a an HTTP status code 200, otherwise further notifications will not be sent.
-
-Upon subscription, the device will respond with a subscription/session ID (sid). This will be in the event message body in subsequent messages.
-
-Node.js example:
-
-```
-const fetch = require("node-fetch");
-
-async function subscribe({ address: deviceAddress, ip: localIP, port: localPort }) {
-  try {
-    const response = await fetch(`${deviceAddress}/upnp/event/basicevent1`, {
-      method: "SUBSCRIBE",
-      headers: {
-        CALLBACK: `<http://${localIP}:${localPort}/>`,
-        NT: "upnp:event",
-        TIMEOUT: "Second-600",
-      },
-    });
-    return response.headers.get("sid");
-  } catch (error) {
-    console.log(error);
-  }
-}
-```
-
-Others who have reverse engineered the Wemo API seem to have maxed out at a 600s subscription timeout, which must then be renewed. I have not bothered to confirm this.
-
-Devices will emit an XML message on on state change, and the request body must be parsed by an XML parser.
-
-Express.js example:
-
-```
-const express = require("express");
-const bodyParser = require("body-parser");
-require("body-parser-xml")(bodyParser);
-
-const eventListener = express();
-
-eventListener
-  .use(bodyParser.xml())
-  .all("/", (request, response) => {
-    const sid = request.headers.sid;
-    const binaryState =
-      request.body["e:propertyset"]["e:property"][0];
-    console.log(sid, binaryState);
-    }
-    response.sendStatus(200);
-  })
-  .listen(port, () =>
-    console.log(`Event listener running on ${port}`)
-  );
-```
-
-[Wemo Hacking](http://mattenoble.com/2013/08/07/wemo-hacking/)
-
-[Wemo API Documentation](https://npmdoc.github.io/node-npmdoc-wemo-client/build/apidoc.html)
-
-[Wemo Event Notifications](https://www.hardill.me.uk/wordpress/2015/01/14/wemo-event-notifications/)
-
-[A Groovy Time with UPnP and WeMo](https://objectpartners.com/2014/03/25/a-groovy-time-with-upnp-and-wemo/)
-
-[SOAP Calls for UPnP Services in WeMo Devices](https://gist.github.com/nstarke/018cd98d862afe0a7cda17bc20f31a1e)
+This application was built on an Express-React-Typescript scaffold available at [github.com/anselbrandt/express-react-ts](https://github.com/anselbrandt/express-react-ts)
