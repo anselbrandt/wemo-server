@@ -6,7 +6,7 @@ import http from "http";
 import * as path from 'path'
 import bodyParser from "body-parser";
 import bodyParserXml from "body-parser-xml";
-import {internalIpV4} from "internal-ip";
+import internalIp from "internal-ip";
 import { getDevices } from "./getDevices";
 import { subscribe } from "./subscribe";
 import { setDevice } from "./setDevice";
@@ -28,7 +28,7 @@ const main = async () => {
   const devicesMap = new Map();
   const deviceNames = new Map();
 
-  const ip = await internalIpV4();
+  const ip = await internalIp.v4();
   if (LOGGING) console.log("server ip:", ip);
 
   const updateDevices = async () => {
